@@ -1,13 +1,13 @@
 import sqlite3
 import random
 
-class Db_manager:
+class Db_manager: # Clase que se hará cargo de manejar la base de datos (conexión, llenado, consulta)
     
-    def __init__(self, db_name):
+    def __init__(self, db_name): #Constructor de Db_manager (Realiza la conexión)
         self.connector = sqlite3.connect(db_name)
         self.connector.commit()
 
-    def fill_data(self):
+    def fill_data(self): #Esta función se encarga de llenar la tabla de preguntas, respuestas y participantes antiguos
         self.__create_tables()
         diccio=self.fillParticipantes()
         preguntas = [("¿Cual de los siguientes no es un sabor primario?", 100, 0, "a"), ("¿Que tipo de animal es la ballena?", 100, 0, "b"),
@@ -43,7 +43,7 @@ class Db_manager:
         return(diccio)
         
 
-    def __create_tables(self):
+    def __create_tables(self): #Función encargada de crear las 3 tablas de la base de datos (preguntas, respuestas y participantes)
         cursor = self.connector.cursor()
         cursor.executescript("""
             CREATE TABLE preguntas(
@@ -73,6 +73,15 @@ class Db_manager:
         """)
         self.connector.commit()
         
+    def consultarHistorico(self):
+        cursor = self.connector.cursor()
+        historico_participantesDB = "SELECT * FROM participantes"
+        cursor.execute(historico_participantesDB)
+        historico = cursor.fetchall()
+        print("Estos son los participantes que han jugado")
+        print(historico)
+        print("Ahora continuaremos con el juego")
+    
     def fillParticipantes(self):
         cursor = self.connector.cursor()
         self.participantes = {}
@@ -95,7 +104,7 @@ class Db_manager:
             parti.asignarNombre(n)
             parti.asignarPremio(prz)
             parti.asignarNivel(lvl)
-            #el participante se guarda con la clave del ID
+            #el participante se guarda con la clave del ID para consultar si existe en el futuro
             self.participantes[cc] = parti 
         return(self.participantes)
 
@@ -181,7 +190,15 @@ class Servicio:
             print("El premio por acertar es: " + str(data[preguntaAleatoria][2]))
             data2 = db.select_respuestas_by_id_pregunta(data[preguntaAleatoria][0])
             print("Opción A: " + str(data2[0][0]) + " Opción B: " + str(data2[0][1]) + " Opción C: " + str(data2[0][2]) + " Opción D: " + str(data2[0][3])) # 1: correct y 0: incorrecta
-            respuestaUsuario=input("Seleccione la respuesta correcta (a, b, c, d): ")
+
+            while True:
+                respuestaUsuario=input("Seleccione la respuesta correcta (a, b, c, d): ").lower()
+                if (respuestaUsuario=="a" or respuestaUsuario=="b" or respuestaUsuario=="c" or respuestaUsuario=="d"):
+                    break
+                else:
+                    print("por favor ingrese una respuesta válida")
+                    continue
+            
             if respuestaUsuario==(data[preguntaAleatoria][3]):
                 print("Respuesta correcta")
                 premio+=data[preguntaAleatoria][2]
@@ -194,9 +211,7 @@ class Servicio:
             if nivel>=5:
                 terminaJuego=True
                 print("Felicidades, ganaste el juego")
-                volver_a_jugar=input("desea volver a jugar? ")
-                if volver_a_jugar == "y":
-                    pass
+
         return(nivel, premio, terminaJuego)
 
     # Función que agrega el participante al dict de la app y a la base de datos
@@ -222,13 +237,7 @@ class Servicio:
             columns = ', '.join("" + str(x).replace('/', '_') + "" for x in mydict.keys())
             values = ', '.join("'" + str(x).replace('/', '_') + "'" for x in mydict.values())
             sqlquery = "INSERT INTO %s ( %s ) VALUES ( %s );" % ('participantes', columns, values)
-            print (sqlquery)
         else:
             sqlquery=""
         return(sqlquery)
-
-    # def retirarseDelJuego(self):
-    #     if retirarse==True:
-    #         self.nivel=self.nivel-1
-    #         self.premio=preguntas.getpremio(self.nivel)
 
