@@ -47,4 +47,4 @@ Para usar este proyecto solo es necesario contar con python 3.10 instalado en su
 ## Modelamiento de la aplicación
 
 A continuación se mostrará un diagrama donde se especifica brevemente las clases y las tablas utilizadas para esta aplicación.
-![Muestra de diagrama UML](img/UML_RS.PNG)
+![Muestra de diagrama UML](img/UML_RS.png)
