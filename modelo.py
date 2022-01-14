@@ -1,3 +1,4 @@
+#Se importa la librería para la base de datos
 import sqlite3
 import random
 
@@ -73,7 +74,7 @@ class Db_manager: # Clase que se hará cargo de manejar la base de datos (conexi
         """)
         self.connector.commit()
         
-    def consultarHistorico(self):
+    def consultarHistorico(self): #Función encargada de llamar e imprimir la tupla de participantes del juego
         cursor = self.connector.cursor()
         historico_participantesDB = "SELECT * FROM participantes"
         cursor.execute(historico_participantesDB)
@@ -82,7 +83,7 @@ class Db_manager: # Clase que se hará cargo de manejar la base de datos (conexi
         print(historico)
         print("Ahora continuaremos con el juego")
     
-    def fillParticipantes(self):
+    def fillParticipantes(self): #Función encargada de tomar los participantes de la tabla y almacenarlos como objeto
         cursor = self.connector.cursor()
         self.participantes = {}
         #sincronizamos la información de la base de datos con el modelo
@@ -108,7 +109,7 @@ class Db_manager: # Clase que se hará cargo de manejar la base de datos (conexi
             self.participantes[cc] = parti 
         return(self.participantes)
 
-    def select_pregunta_by_id_categoria(self, id_categoria):
+    def select_pregunta_by_id_categoria(self, id_categoria): #Función que se encarga de llamar el banco de preguntas dependiendo del nivel
         cursor = self.connector.cursor()
         query = f"SELECT id, texto, premio, respuestaCorr FROM preguntas WHERE level = {id_categoria}"
         cursor.execute(query)
@@ -116,7 +117,7 @@ class Db_manager: # Clase que se hará cargo de manejar la base de datos (conexi
         self.connector.commit()
         return data
 
-    def select_respuestas_by_id_pregunta(self, id_pregunta):
+    def select_respuestas_by_id_pregunta(self, id_pregunta): #Función que se encarga de llamar las respuestas a una pregunta en base al id_pregunta
         cursor = self.connector.cursor()
         query = f"SELECT optA, optB, optC, optD FROM respuestas WHERE id_pregunta = {id_pregunta}"
         cursor.execute(query)
@@ -124,7 +125,7 @@ class Db_manager: # Clase que se hará cargo de manejar la base de datos (conexi
         self.connector.commit()
         return data
 
-    def agregado_de_datos(self, sqlquery):
+    def agregado_de_datos(self, sqlquery): #Función que agrega los datos del participante a la base de datos
         if (sqlquery == ""):
             bandera=False
         else:
@@ -134,19 +135,24 @@ class Db_manager: # Clase que se hará cargo de manejar la base de datos (conexi
             bandera=True
         return(bandera)
 
-    def __fill_preguntas (self, data_list):
+    def __fill_preguntas (self, data_list): #Función encargada de mandar el query para llenar la tabla "preguntas"
         cursor = self.connector.cursor()
         query = f"INSERT INTO preguntas (texto, premio, level, respuestaCorr) VALUES (?, ?, ?, ?)"
         cursor.executemany(query, data_list)
         self.connector.commit()
 
-    def __fill_respuestas (self, data_list):
+    def __fill_respuestas (self, data_list): #Función encargada de mandar el query para llenar la tabla "respuestas"
         cursor = self.connector.cursor()
         query = f"INSERT INTO respuestas (optA, optB, optC, optD, id_pregunta) VALUES (?, ?, ?, ?, ?)"
         cursor.executemany(query, data_list)
         self.connector.commit()
+    
+    def manager_disconect (self): # Función que para la conexión con la base de datos
+        cursor = self.connector.cursor()
+        cursor.close()
+        self.connector.close()
 
-class Participante:
+class Participante: #Clase participante, encargada de contener la información básica de un participante
     
     def __init__(self):
         self.id=0
@@ -166,13 +172,12 @@ class Participante:
     def asignarNivel(self, lvl):
         self.nivel = lvl
 
-class Servicio:
+class Servicio: # Clase servicio, encargada de realizar las funciones principales del juego
 
-    def __init__(self):
-        self.preguntas = {}
-        self.respuestas = {}
+    def __init__(self): # Constructor vacío
+        pass
     
-    def verificarParticipante(self, cc, diccionario):
+    def verificarParticipante(self, cc, diccionario): # Función encargada de verificar si el paciente existe en la base de datos
         if (cc in diccionario) == False:
             permiso = True
             print("el participante puede jugar")
@@ -181,8 +186,8 @@ class Servicio:
             print("el participante no puede jugar por que sus credenciales ya existen, ingrese los datos nuevamente")
         return permiso
     
-    def jugar(self, permiso, nivel, premio, db):
-        if permiso:
+    def jugar(self, permiso, nivel, premio, db): # Función encargada de llamar la pregunta aleatoria y sus respuestas
+        if permiso: #La función también se encarga de capturar la respuesta del usuario, verificar si es correcta, asignar puntos y subir nivel
             terminaJuego=False
             preguntaAleatoria=random.randrange(0,4,1)
             data = db.select_pregunta_by_id_categoria(nivel)
@@ -199,16 +204,16 @@ class Servicio:
                     print("por favor ingrese una respuesta válida")
                     continue
             
-            if respuestaUsuario==(data[preguntaAleatoria][3]):
+            if respuestaUsuario==(data[preguntaAleatoria][3]): #Aumenta el nivel del usuario y asigna el premio correspondiente
                 print("Respuesta correcta")
                 premio+=data[preguntaAleatoria][2]
                 nivel=nivel+1
-            else:
+            else: # Finaliza el juego
                 print("Respuesta erronea")
                 terminaJuego=True
                 premio=0
             
-            if nivel>=5:
+            if nivel>=5: # Si el usuario sobrepasa el nivel 4 termina el juego
                 terminaJuego=True
                 print("Felicidades, ganaste el juego")
 
@@ -230,9 +235,6 @@ class Servicio:
             mydict={'ide': cc, 'nombre': n, 'premio': prz, 'nivel': lvl}
             print (mydict)
             
-            testo = list(mydict.keys())
-            texto = list(mydict.values())
-            
             #Insetar información
             columns = ', '.join("" + str(x).replace('/', '_') + "" for x in mydict.keys())
             values = ', '.join("'" + str(x).replace('/', '_') + "'" for x in mydict.values())
@@ -240,4 +242,3 @@ class Servicio:
         else:
             sqlquery=""
         return(sqlquery)
-
